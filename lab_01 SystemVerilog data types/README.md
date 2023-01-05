@@ -472,7 +472,7 @@ instruction IR;     // объявление переменной IR типа ins
 Для иллюстрации рассмотрим пример:
 
 ```SystemVerilog
-logic [2:0][3:0] packed_array = {4'b0110,4'b1111,4'b0101};
+logic [2:0][3:0] packed_array = '{4'b0110,4'b1111,4'b0101};
 ```
 
 Данный код создает упакованный массив, состоящий из трех четырехбитных элементов, которые размещены в памяти следующим образом:
@@ -485,7 +485,7 @@ logic [2:0][3:0] packed_array = {4'b0110,4'b1111,4'b0101};
 Сделаем из него многомерный массив, т.е. массив, состоящий из нескольких таких многомерных векторов:
 
 ```SystemVerilog
-logic [2:0][3:0] packed_array [0:1] = {{4'b0110,4'b1111,4'b0101},{4'b1001,4'b0000,4'b1010}};
+logic [2:0][3:0] packed_array [0:1] = '{'{4'b0110,4'b1111,4'b0101},'{4'b1001,4'b0000,4'b1010}};
 ```
 
 Пример создания такого же массива, но с указанием размера вместо размерности:
@@ -493,7 +493,7 @@ logic [2:0][3:0] packed_array [0:1] = {{4'b0110,4'b1111,4'b0101},{4'b1001,4'b000
 ```SystemVerilog
                             // ⌜ здесь мы указали количество элементов массива,
                             // | а не его размерность
-logic [2:0][3:0] packed_array [2] = {{4'b0110,4'b1111,4'b0101},{4'b1001,4'b0000,4'b1010}};
+logic [2:0][3:0] packed_array [2] = '{'{4'b0110,4'b1111,4'b0101},'{4'b1001,4'b0000,4'b1010}};
 ```
 
 Оба примера создают распакованный массив состоящий из двух многомерных векторов (упакованных массивов), которые могут располагаться в памяти следующим образом:
@@ -506,17 +506,95 @@ logic [2:0][3:0] packed_array [2] = {{4'b0110,4'b1111,4'b0101},{4'b1001,4'b0000,
 
 Символами `x` обозначены участки памяти, не содержащие элементы массива. Таким образом, внутри отдельного упакованного массива, все элементы всё ещё располагаются в памяти непрерывно, однако между элементами распакованного массива могут быть пропуски (отсюда и названия этих массивов). Это связано с тем, что распакованный массив может состоять из элементов различного размера. К примеру, из двух строк, одна из которых содержит 5 символов, а другая — 10.
 
+Правило обращения к элементам массивом следующее:
+
+> Слева-направо, но начиная справа
+
+Рассмотрим это правило на примере:
+
+```SystemVerilog
+bit [31:0] example [2][3] = '{ '{0,1,2}, '{3,4,5} };
+```
+
+Для того, чтобы обратиться к младшему биту элемента массива, со значением 2, необходимо выполнить следующее обращение:
+
+```SystemVerilog
+      //v- наибольший индекс размерности со значением 2
+example[0][2][31] //<- старший бит 32-битного элемента
+      //   ^- наибольший индекс размерности со значением 3
+```
+
+Таким образом, порядок обращения к элементам массива из примера следующий:
+
+```SystemVerilog
+bit [31:0] example [2][3] = '{ '{0,1,2}, '{3,4,5} };
+//   [ 3]          [1][2] — В каком порядке указаны индекс
+//   [31]          [0][2] — какие значения у каких индексов
+//                          использовались в примере
+```
+
+Таким образом, еще раз: обращения всегда идут слева-направо, но начиная с правой половины (начиная с индексов справа от имени массива).
+
 ---
 
 #### Динамические массивы (dynamic array)
+
+Динамический массив — это распакованный массив, чей размер может изменяться во времени. Размер по-умолчанию у непроинициализированного динамического массива равен нулю. Размер динамического массива может быть установлен конструктором `new[]`, либо присваиванием массива. Динамические массивы могут содержать элементы любых типов, включая другие массивы<sup>[3]</sup>.  
+С помощью оператора `new[]` можно изменить размер массива, однако в этом случае потеряются прошлые значения элементов. Этого можно избежать, если после оператора `new[]` указать в качестве опционального аргумента массив в качестве значения для инициализации (см. пример).
+У динамических массивов есть встроенный метод `size()`, позволяющий узнать размер массива.  
+
+```SystemVerilog
+initial begin
+  bit [3:0] nibble[];             // объявление динамического массива четырехбитных векторов
+  nibble =  new[3];               // инициализация массива пустым массивом из трех элементов
+  nibble = '{4'd0, 4'd5, 4'd10};  // присваивание элементам массива значений 0, 5, 10
+  nibble = new[4] (nibble);       // изменение размера массива, с сохранением предыдущих значений
+  nibble[3] = 4'd15;              // доинициализация массива присваиванием значения нового элемента
+  for(int i = 0; i < nibble.size(); i++) begin
+    $display(nibble[i]);
+  end
+end
+```
+
 
 ---
 
 #### Ассоциативные массивы
 
+Dynamic arrays are useful for dealing with contiguous collections of variables whose number changes dynamically. When the size of the collection is unknown or the data space is sparse, an associative array is a better option. Associative arrays do not have any storage allocated until it is used, and the index expression is not restricted to integral expressions, but can be of any type.
+
+An associative array implements a lookup table of the elements of its declared type. The data type to be used as an index serves as the lookup key and imposes an ordering.
+
+The syntax to declare an associative array is as follows:
+
+```SystemVerilog
+data_type array_id [ index_type ];
+```
+
+where
+
+- `data_type` is the data type of the array elements. Can be any type allowed for fixed-size arrays.
+- `array_id` is the name of the array being declared.
+- `index_type` is the data-type to be used as an index or is *. If* is specified, then the array is indexed by any integral expression of arbitrary size. An index type restricts the indexing expressions to a particular type. It shall be illegal for `index_type` to declare a type.
+
+Examples of associative array declarations are as follows:
+
+```SystemVerilog
+integer i_array[*];         // associative array of integer (unspecified index)
+bit [20:0] array_b[string]; // associative array of 21-bit vector, indexed by string
+event ev_array[myClass];    // associative array of event indexed by class myClass
+```
+
 ---
 
 #### Очереди (queue)
+
+A queue is a variable-size, ordered collection of homogeneous elements. A queue supports constant-time
+access to all its elements as well as constant-time insertion and removal at the beginning or the end of the queue. Each element in a queue is identified by an ordinal number that represents its position within the queue, with 0 representing the first, and $ representing the last. A queue is analogous to a one-dimensional unpacked array that grows and shrinks automatically. Thus, like arrays, queues can be manipulated using the indexing, concatenation, slicing operator syntax, and equality operators.
+
+Queues are declared using the same syntax as unpacked arrays, but specifying $ as the array size. The
+maximum size of a queue can be limited by specifying its optional right bound (last index)
+
 
 ---
 
@@ -553,3 +631,4 @@ logic [2:0][3:0] packed_array [2] = {{4'b0110,4'b1111,4'b0101},{4'b1001,4'b0000,
 
 1. [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 6.11.2 (стр.104)
 2. [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 7.2 (стр.139)
+3. [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 7.5 (стр.149)
