@@ -32,10 +32,11 @@
       - [Динамические массивы (dynamic array)](#динамические-массивы-dynamic-array)
       - [Ассоциативные массивы](#ассоциативные-массивы)
       - [Очереди (queue)](#очереди-queue)
+    - [Почтовый ящик (mailbox)](#почтовый-ящик-mailbox)
     - [Интерфейсы (interfaces)](#интерфейсы-interfaces)
     - [Пакеты (packages)](#пакеты-packages)
-      - [Почтовый ящик (mailbox)](#почтовый-ящик-mailbox)
     - [Преобразование типов (оператор преобразования, динамическое преобразование)](#преобразование-типов-оператор-преобразования-динамическое-преобразование)
+  - [Практика](#практика)
   - [Задание](#задание)
     - [Объявление объектов типов](#объявление-объектов-типов)
     - [Доступ элементам контейнеров](#доступ-элементам-контейнеров)
@@ -561,55 +562,74 @@ end
 
 #### Ассоциативные массивы
 
-Dynamic arrays are useful for dealing with contiguous collections of variables whose number changes dynamically. When the size of the collection is unknown or the data space is sparse, an associative array is a better option. Associative arrays do not have any storage allocated until it is used, and the index expression is not restricted to integral expressions, but can be of any type.
+Динамические массивы полезны при работе с непрерывным набором объектов, размер которого динамически изменяется. Когда размер набора неизвестен, или данные разрежены, более подходящим вариантом становится ассоциативный массив. Ассоциативные массивы не выделяют память до момента использования, а выражение индекса не привязано к целочисленному типу и вместо этого может быть любого типа.
 
-An associative array implements a lookup table of the elements of its declared type. The data type to be used as an index serves as the lookup key and imposes an ordering.
+Ассоциативный массив представляет собой таблицу поиска элементов определенного типа. Тип данных, используемый в качестве индекса служит ключом, по которому ищутся данные и предполагает возможность сортировки.
 
-The syntax to declare an associative array is as follows:
+Для объявления ассоциативного массива используется следующий синтаксис:
 
 ```SystemVerilog
 data_type array_id [ index_type ];
 ```
 
-where
+где
 
-- `data_type` is the data type of the array elements. Can be any type allowed for fixed-size arrays.
-- `array_id` is the name of the array being declared.
-- `index_type` is the data-type to be used as an index or is *. If* is specified, then the array is indexed by any integral expression of arbitrary size. An index type restricts the indexing expressions to a particular type. It shall be illegal for `index_type` to declare a type.
+- `data_type` является типом элементов ассоциативного массива. В качестве типа может использоваться любой тип, допустимый для обычных массивов.
+- `array_id` имя объявляемого массива.
+- `index_type` тип, используемый в качестве индекса, либо `*`. Если указан символ `*`, то массив индексируется любым целочисленным выражением произвольного размера.<sup>[4]</sup>
 
-Examples of associative array declarations are as follows:
+Пример объявления ассоциативного массива:
 
 ```SystemVerilog
-integer i_array[*];         // associative array of integer (unspecified index)
-bit [20:0] array_b[string]; // associative array of 21-bit vector, indexed by string
-event ev_array[myClass];    // associative array of event indexed by class myClass
+integer i_array[*];
+bit [20:0] array_b[string];
+event ev_array[myClass];
 ```
 
 ---
 
 #### Очереди (queue)
 
-A queue is a variable-size, ordered collection of homogeneous elements. A queue supports constant-time
-access to all its elements as well as constant-time insertion and removal at the beginning or the end of the queue. Each element in a queue is identified by an ordinal number that represents its position within the queue, with 0 representing the first, and $ representing the last. A queue is analogous to a one-dimensional unpacked array that grows and shrinks automatically. Thus, like arrays, queues can be manipulated using the indexing, concatenation, slicing operator syntax, and equality operators.
+Очередь — это упорядоченный набор однородных элементов переменой длины. Очередь поддерживает константное время доступа к элементам, а так же вставку и удаление оных из начала/конца массива. Каждый элемент очереди определяется порядковым номером, обозначающим его позицию внутри очереди начиная с нуля, `$` обозначает последний элемент. Очередь схожа с распакованным одномерным массивом, который меняет свой размер автоматически. Это значит, что с очередями можно работать используя индексы, конкатенацию, доступ к диапазону элементов (slice) и операцию сравнения.<sup>[5]</sup>
 
-Queues are declared using the same syntax as unpacked arrays, but specifying $ as the array size. The
-maximum size of a queue can be limited by specifying its optional right bound (last index)
+Очереди объявляются тем же синтаксисом, что и распакованные массивы, но указывая `$` в качестве размера массива. Размер очереди можно ограничить, указав верхнюю границу в качестве опционального аргумента (индекса последнего элемента).
+
+Пример объявления очереди:
+
+```SystemVerilog
+byte q1[$]; // A queue of bytes
+string names[$] = { "Bob" }; // A queue of strings with one element
+integer Q[$] = { 3, 2, 7 }; // An initialized queue of integers
+bit q2[$:255]; // A queue whose maximum size is 256 bits
+```
+
+---
+
+### Почтовый ящик (mailbox)
+
+[IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 15.4 (стр. 356)
 
 ---
 
 ### Интерфейсы (interfaces)
 
+[IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 25 (стр. 748)
+
 ---
 
 ### Пакеты (packages)
 
----
-
-#### Почтовый ящик (mailbox)
+[IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 26 (стр. 775)
 
 ---
 
 ### Преобразование типов (оператор преобразования, динамическое преобразование)
+
+[IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 6.24 (стр. 132)
+
+---
+
+## Практика
 
 ---
 
@@ -702,6 +722,15 @@ bit [18:0][3:0] some_other_type [7][$];
 
 ## Список ссылок
 
-1. [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 6.11.2 (стр.104)
-2. [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 7.2 (стр.139)
-3. [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), раздел 7.5 (стр.149)
+Все ссылки используют стандарт [IEEE 1800-2017](https://ieeexplore.ieee.org/document/8299595), далее указывается раздел и страница
+
+| № | Описание ссылки         | Раздел и страница стандарта |
+|---|-------------------------|-----------------------------|
+|1. |Тип logic, как alias reg | раздел 6.11.2 (стр.104)     |
+|2. |Структуры                | раздел 7.2 (стр.139)        |
+|3. |Динамические массивы     | раздел 7.5 (стр.149)        |
+|4. |Ассоциативные массивы    | раздел 7.8 (стр.155)        |
+|5. |Очереди                  | раздел 7.10 (стр.161)       |
+|6. |Почтовый ящик            | раздел 15.4 (стр. 356)      |
+|7. |Интерфейсы               | раздел 25 (стр. 748)        |
+|8. |Пакеты                   | раздел 26 (стр. 775)        |
